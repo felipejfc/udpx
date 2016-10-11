@@ -1,4 +1,0 @@
-UDP-Proxy
-=========
-
-A UDP Proxy that works as a NAT written in Golang.
