@@ -1,0 +1,8 @@
+hash: f4345100ccf85677f2d6a587a3097aebb55c765f03e7c749a59d28175696277b
+updated: 2016-10-10T21:55:45.04648759-03:00
+imports:
+- name: github.com/uber-go/atomic
+  version: 0c9e689d64f004564b79d9a663634756df322902
+- name: github.com/uber-go/zap
+  version: d11d2851fcabcf03421c4dbdbc3146fc74eb1035
+testImports: []

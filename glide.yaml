@@ -1,0 +1,5 @@
+package: github.com/felipejfc/udp-proxy
+import:
+- package: github.com/uber-go/zap
+- package: github.com/uber-go/atomic
+  version: ~1.0.0
