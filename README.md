@@ -1,9 +1,21 @@
 UDP-Proxy
 =========
 
-A UDP Proxy that works as a NAT (has support to multiple clients) written in Golang.
+A Super Fast UDP Proxy that works as a NAT (has support to multiple clients) written in Golang.
 
 ### Features
 
-* Super Performatic
+* Super Fast
 * Can Handle Multiple Clients
+* Act as a NAT
+
+### TODO
+- [ ] Add config
+- [ ] Add command
+- [ ] Add tests
+- [ ] Travis CI and Code Coverage
+- [ ] Support to multiple upstreams
+- [ ] Dynamic resolve upstreams
+- [ ] Dynamically add upstreams
+- [ ] Can persist upstreams
+- [ ] Persist proxy state between reboots?
