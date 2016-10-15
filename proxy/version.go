@@ -20,10 +20,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package main
+package proxy
 
-import "github.com/felipejfc/udp-proxy/cmd"
-
-func main() {
-	cmd.Execute(cmd.RootCmd)
-}
+// VERSION identifies UDP-Proxy current version
+var VERSION = "0.0.1"

@@ -20,10 +20,29 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package main
+package cmd
 
-import "github.com/felipejfc/udp-proxy/cmd"
+import (
+	"fmt"
+	"os"
 
-func main() {
-	cmd.Execute(cmd.RootCmd)
+	"github.com/spf13/cobra"
+)
+
+// Verbose determines how verbose udp-proxy will run under
+var Verbose int
+
+// RootCmd is the root command for udp-proxy CLI application
+var RootCmd = &cobra.Command{
+	Use:   "udp-proxy",
+	Short: "A fast UDP proxy.",
+	Long:  `A fast UDP proxy that support multiple clients and dynamic upstreams`,
+}
+
+// Execute runs RootCmd to initialize udp-proxy CLI application
+func Execute(cmd *cobra.Command) {
+	if err := cmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
 }
