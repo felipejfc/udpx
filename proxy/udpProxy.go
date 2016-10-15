@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 
 	"github.com/uber-go/zap"
 )
@@ -40,17 +41,27 @@ func CheckError(err error) {
 	}
 }
 
+type connection struct {
+	udp          *net.UDPConn
+	lastActivity time.Time
+}
+
 type Proxy struct {
 	Logger        zap.Logger
 	LocalPort     int
 	BindAddress   string
+	DstAddress    string
+	DstPort       int
 	Debug         bool
-	ProxyConn     *net.UDPConn
+	SrcConn       *net.UDPConn
+	Client        *net.UDPConn
+	DstConn       *net.UDPConn
+	connsMap      map[string]connection
 	BufferSize    int
 	SocketTimeout int
 }
 
-func GetProxy(debug bool, logger zap.Logger, localPort int, bindAddress string, bufferSize int, socketTimeout int) *Proxy {
+func GetProxy(debug bool, logger zap.Logger, localPort int, bindAddress string, dstAddress string, dstPort int, bufferSize int, socketTimeout int) *Proxy {
 	proxy := &Proxy{
 		Debug:         debug,
 		Logger:        logger,
@@ -58,15 +69,18 @@ func GetProxy(debug bool, logger zap.Logger, localPort int, bindAddress string, 
 		BindAddress:   bindAddress,
 		BufferSize:    bufferSize,
 		SocketTimeout: socketTimeout,
+		DstAddress:    dstAddress,
+		DstPort:       dstPort,
 	}
 
 	return proxy
 }
 
 func (p *Proxy) readLoop() {
+	//TODO criar connection nova con o dst p cada client se ainda nao existir, tentar fazer o forward
 	for {
 		buffer := make([]byte, p.BufferSize)
-		size, srcAddress, err := p.ProxyConn.ReadFromUDP(buffer)
+		size, srcAddress, err := p.SrcConn.ReadFromUDP(buffer)
 		if err != nil {
 			//TODO Should I only log the error here?
 			p.Logger.Error("error", zap.Error(err))
@@ -79,7 +93,7 @@ func (p *Proxy) readLoop() {
 	}
 }
 
-func (p *Proxy) freeSocketsLoop() {
+func (p *Proxy) freeIdleSocketsLoop() {
 
 }
 
@@ -91,7 +105,7 @@ func (p *Proxy) StartProxy() {
 
 	ProxyAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", p.BindAddress, p.LocalPort))
 	CheckError(err)
-	p.ProxyConn, err = net.ListenUDP("udp", ProxyAddr)
+	p.SrcConn, err = net.ListenUDP("udp", ProxyAddr)
 	CheckError(err)
 	p.Logger.Info("UDP Proxy listening...")
 	p.readLoop()
