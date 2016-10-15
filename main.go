@@ -23,6 +23,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/felipejfc/udp-proxy/proxy"
 	"github.com/uber-go/zap"
 )
@@ -31,10 +33,12 @@ func main() {
 	ll := zap.DebugLevel
 	logger := zap.New(zap.NewJSONEncoder(), ll)
 	debug := true
-	localPort := 10000
+	bindPort := 10000
 	bindAddress := "0.0.0.0"
 	bufferSize := 4096
-	socketTimeout := 1000 //millis
-	p := proxy.GetProxy(debug, logger, localPort, bindAddress, bufferSize, socketTimeout)
+	connTimeout := time.Second * 1 //millis
+	upstreamAddress := "localhost"
+	upstreamPort := 8830
+	p := proxy.GetProxy(debug, logger, bindPort, bindAddress, upstreamAddress, upstreamPort, bufferSize, connTimeout)
 	p.StartProxy()
 }
