@@ -1,0 +1,16 @@
+{
+  "proxyConfigs": [
+    {
+      "bindPort": 10000,
+      "clientsTimeout": 1000,
+      "upstreamAddress": "localhost",
+      "upstreamPort": 8830
+    },
+    {
+      "bindPort": 10001,
+      "clientsTimeout": 800,
+      "upstreamAddress": "localhost",
+      "upstreamPort": 8831
+    }
+  ]
+}

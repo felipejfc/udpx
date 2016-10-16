@@ -23,6 +23,8 @@
 package cmd
 
 import (
+	"fmt"
+	"io/ioutil"
 	"time"
 
 	"github.com/felipejfc/udp-proxy/proxy"
@@ -56,6 +58,8 @@ environment variables to override configuration keys.`,
 			zap.Bool("quiet", quiet),
 		)
 
+		LoadProxyConfigsFromConfigFiles()
+
 		cmdL.Debug("Creating proxy...")
 		//TODO fix
 		bindPort := 10000
@@ -76,6 +80,19 @@ environment variables to override configuration keys.`,
 		cmdL.Debug("Proxy created successfully.")
 		p.StartProxy()
 	},
+}
+
+func LoadProxyConfigsFromConfigFiles() []proxy.ProxyInstance {
+	files, err := ioutil.ReadDir("./config")
+	var proxyConfigs []proxy.ProxyInstance
+	proxy.CheckError(err)
+	for _, f := range files {
+		configs := proxy.ParseConfig(fmt.Sprintf("./config/%s", f.Name()))
+		for _, c := range configs {
+			proxyConfigs = append(proxyConfigs, c)
+		}
+	}
+	return proxyConfigs
 }
 
 func init() {
