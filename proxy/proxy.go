@@ -37,7 +37,6 @@ func CheckError(err error) {
 	logger := zap.New(zap.NewJSONEncoder(), ll)
 	if err != nil {
 		logger.Error("error", zap.Error(err))
-		fmt.Println("Error: ", err)
 		os.Exit(1)
 	}
 }
@@ -199,16 +198,25 @@ func (p *Proxy) StartProxy() {
 	p.Logger.Info("Starting proxy")
 
 	ProxyAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", p.BindAddress, p.BindPort))
-	CheckError(err)
+	if err != nil {
+		p.Logger.Error("error resolving bind address", zap.Error(err))
+		return
+	}
 	p.upstream, err = net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", p.UpstreamAddress, p.UpstreamPort))
-	CheckError(err)
+	if err != nil {
+		p.Logger.Error("error resolving upstream address", zap.Error(err))
+		return
+	}
 	p.client = &net.UDPAddr{
 		IP:   ProxyAddr.IP,
 		Port: 0,
 		Zone: ProxyAddr.Zone,
 	}
 	p.listenerConn, err = net.ListenUDP("udp", ProxyAddr)
-	CheckError(err)
+	if err != nil {
+		p.Logger.Error("error listening on bind port", zap.Error(err))
+		return
+	}
 	p.Logger.Info("UDP Proxy started!")
 	go p.freeIdleSocketsLoop()
 	go p.readLoop()
