@@ -29,17 +29,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Verbose determines how verbose udp-proxy will run under
+// Verbose determines how verbose udpx will run under
 var Verbose int
 
-// RootCmd is the root command for udp-proxy CLI application
+// RootCmd is the root command for udpx CLI application
 var RootCmd = &cobra.Command{
-	Use:   "udp-proxy",
+	Use:   "udpx",
 	Short: "A fast UDP proxy.",
 	Long:  `A fast UDP proxy that support multiple clients and dynamic upstreams`,
 }
 
-// Execute runs RootCmd to initialize udp-proxy CLI application
+// Execute runs RootCmd to initialize udpx CLI application
 func Execute(cmd *cobra.Command) {
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)

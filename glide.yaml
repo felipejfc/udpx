@@ -1,4 +1,4 @@
-package: github.com/felipejfc/udp-proxy
+package: github.com/felipejfc/udpx
 import:
 - package: github.com/uber-go/zap
 - package: github.com/uber-go/atomic

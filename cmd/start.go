@@ -26,13 +26,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/felipejfc/udp-proxy/proxy"
+	"github.com/felipejfc/udpx/proxy"
 	"github.com/spf13/cobra"
 	"github.com/uber-go/zap"
 )
 
 var debug bool
 var quiet bool
+var api bool
 var bindAddress string
 var bufferSize int
 var configPath string
@@ -61,9 +62,16 @@ environment variables to override configuration keys.`,
 		)
 
 		cmdL.Debug("Creating proxies...")
-		//TODO fix
 
 		proxyConfigs := proxy.LoadProxyConfigsFromConfigFiles(configPath)
+
+		if len(proxyConfigs) == 0 {
+			if !api {
+				cmdL.Fatal("no proxy config loaded")
+			} else {
+				cmdL.Warn("no proxy config loaded")
+			}
+		}
 
 		for _, proxyConfig := range proxyConfigs {
 			//TODO guardar proxies e verificar conflitos de bind port
@@ -91,5 +99,6 @@ func init() {
 	startCmd.Flags().StringVarP(&bindAddress, "bind", "b", "0.0.0.0", "Host to bind proxies")
 	startCmd.Flags().StringVarP(&configPath, "configPath", "c", "./config", "Path to the folder containing the config files")
 	startCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode")
+	startCmd.Flags().BoolVarP(&api, "api", "a", false, "Start udpx api for managing upstreams dinamically")
 	startCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Quiet mode (log level error)")
 }

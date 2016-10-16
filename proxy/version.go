@@ -22,5 +22,5 @@
 
 package proxy
 
-// VERSION identifies UDP-Proxy current version
+// VERSION identifies UDPX current version
 var VERSION = "0.0.1"

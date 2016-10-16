@@ -25,7 +25,6 @@ package proxy
 import (
 	"fmt"
 	"net"
-	"os"
 	"sync"
 	"time"
 
@@ -36,8 +35,7 @@ func CheckError(err error) {
 	ll := zap.ErrorLevel
 	logger := zap.New(zap.NewJSONEncoder(), ll)
 	if err != nil {
-		logger.Error("error", zap.Error(err))
-		os.Exit(1)
+		logger.Fatal("error", zap.Error(err))
 	}
 }
 

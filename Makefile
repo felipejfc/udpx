@@ -21,7 +21,8 @@
 .PHONY: all
 
 build:
-	@go build -o udp-proxy.o
+	@mkdir -p bin
+	@go build -o bin/udpx
 
 run:
 	@go run main.go start

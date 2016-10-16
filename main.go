@@ -22,7 +22,7 @@
 
 package main
 
-import "github.com/felipejfc/udp-proxy/cmd"
+import "github.com/felipejfc/udpx/cmd"
 
 func main() {
 	cmd.Execute(cmd.RootCmd)

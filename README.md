@@ -1,9 +1,9 @@
-UDP-Proxy
+UDPX
 =========
-[![Build Status](https://travis-ci.org/felipejfc/udp-proxy.svg?branch=master)](https://travis-ci.org/felipejfc/udp-proxy)
-[![Coverage Status](https://coveralls.io/repos/github/felipejfc/udp-proxy/badge.svg)](https://coveralls.io/github/felipejfc/udp-proxy)
-[![Code Climate](https://codeclimate.com/github/felipejfc/udp-proxy/badges/gpa.svg)](https://codeclimate.com/github/felipejfc/udp-proxy)
-[![Go Report Card](https://goreportcard.com/badge/github.com/felipejfc/udp-proxy)](https://goreportcard.com/report/github.com/felipejfc/udp-proxy)
+[![Build Status](https://travis-ci.org/felipejfc/udpx.svg?branch=master)](https://travis-ci.org/felipejfc/udpx)
+[![Coverage Status](https://coveralls.io/repos/github/felipejfc/udpx/badge.svg)](https://coveralls.io/github/felipejfc/udpx)
+[![Code Climate](https://codeclimate.com/github/felipejfc/udpx/badges/gpa.svg)](https://codeclimate.com/github/felipejfc/udpx)
+[![Go Report Card](https://goreportcard.com/badge/github.com/felipejfc/udpx)](https://goreportcard.com/report/github.com/felipejfc/udpx)
 
 A Super Fast UDP Proxy that works as a NAT (has support to multiple clients) written in Golang.
 
