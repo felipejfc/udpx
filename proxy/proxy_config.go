@@ -24,6 +24,7 @@ package proxy
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 )
 
@@ -45,4 +46,17 @@ func ParseConfig(configFilePath string) []ProxyInstance {
 	json.Unmarshal(file, &proxyConfig)
 
 	return proxyConfig.ProxyConfigs
+}
+
+func LoadProxyConfigsFromConfigFiles(configPath string) []ProxyInstance {
+	files, err := ioutil.ReadDir(configPath)
+	var proxyConfigs []ProxyInstance
+	CheckError(err)
+	for _, f := range files {
+		configs := ParseConfig(fmt.Sprintf("%s/%s", configPath, f.Name()))
+		for _, c := range configs {
+			proxyConfigs = append(proxyConfigs, c)
+		}
+	}
+	return proxyConfigs
 }

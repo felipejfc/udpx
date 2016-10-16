@@ -23,8 +23,7 @@
 package cmd
 
 import (
-	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/felipejfc/udp-proxy/proxy"
@@ -34,6 +33,9 @@ import (
 
 var debug bool
 var quiet bool
+var bindAddress string
+var bufferSize int
+var configPath string
 
 var startCmd = &cobra.Command{
 	Use:   "start",
@@ -58,46 +60,36 @@ environment variables to override configuration keys.`,
 			zap.Bool("quiet", quiet),
 		)
 
-		LoadProxyConfigsFromConfigFiles()
-
-		cmdL.Debug("Creating proxy...")
+		cmdL.Debug("Creating proxies...")
 		//TODO fix
-		bindPort := 10000
-		bindAddress := "0.0.0.0"
-		bufferSize := 4096
-		connTimeout := time.Second * 1 //millis
-		upstreamAddress := "localhost"
-		upstreamPort := 8830
 
-		l1 := l.With(
-			zap.String("bind address", bindAddress),
-			zap.Int("bind port", bindPort),
-			zap.String("upstream address", upstreamAddress),
-			zap.Int("upstream port", upstreamPort),
-		)
+		proxyConfigs := proxy.LoadProxyConfigsFromConfigFiles(configPath)
 
-		p := proxy.GetProxy(debug, l1, bindPort, bindAddress, upstreamAddress, upstreamPort, bufferSize, connTimeout)
-		cmdL.Debug("Proxy created successfully.")
-		p.StartProxy()
-	},
-}
-
-func LoadProxyConfigsFromConfigFiles() []proxy.ProxyInstance {
-	files, err := ioutil.ReadDir("./config")
-	var proxyConfigs []proxy.ProxyInstance
-	proxy.CheckError(err)
-	for _, f := range files {
-		configs := proxy.ParseConfig(fmt.Sprintf("./config/%s", f.Name()))
-		for _, c := range configs {
-			proxyConfigs = append(proxyConfigs, c)
+		for _, proxyConfig := range proxyConfigs {
+			//TODO guardar proxies e verificar conflitos de bind port
+			bindPort := proxyConfig.BindPort
+			upstreamAddress := proxyConfig.UpstreamAddress
+			upstreamPort := proxyConfig.UpstreamPort
+			clientsTimeout := proxyConfig.ClientsTimeout
+			ll := l.With(
+				zap.String("bind address", bindAddress),
+				zap.Int("bind port", bindPort),
+				zap.String("upstream address", upstreamAddress),
+				zap.Int("upstream port", upstreamPort),
+			)
+			p := proxy.GetProxy(debug, ll, bindPort, bindAddress, upstreamAddress, upstreamPort, bufferSize, time.Duration(clientsTimeout)*time.Millisecond)
+			p.StartProxy()
 		}
-	}
-	return proxyConfigs
+		exitSignal := make(chan os.Signal)
+		<-exitSignal
+	},
 }
 
 func init() {
 	RootCmd.AddCommand(startCmd)
-
+	startCmd.Flags().IntVarP(&bufferSize, "bufferSize", "B", 4096, "Datagrams buffer size")
+	startCmd.Flags().StringVarP(&bindAddress, "bind", "b", "0.0.0.0", "Host to bind proxies")
+	startCmd.Flags().StringVarP(&configPath, "configPath", "c", "./config", "Path to the folder containing the config files")
 	startCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode")
 	startCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Quiet mode (log level error)")
 }

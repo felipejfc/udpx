@@ -211,5 +211,5 @@ func (p *Proxy) StartProxy() {
 	CheckError(err)
 	p.Logger.Info("UDP Proxy started!")
 	go p.freeIdleSocketsLoop()
-	p.readLoop()
+	go p.readLoop()
 }
