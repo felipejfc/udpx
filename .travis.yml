@@ -1,0 +1,13 @@
+language: go
+
+go:
+  - 1.6.2
+
+install:
+  - make setup-ci
+
+script:
+  - make coverage
+
+after_success:
+  - $HOME/gopath/bin/goveralls -coverprofile coverage-all.out -service=travis-ci
