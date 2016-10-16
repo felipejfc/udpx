@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"encoding/json"
 	"errors"
 	"net"
 	"strings"
@@ -45,6 +46,11 @@ func (f fakeUser) MarshalLog(kv KeyValue) error {
 func assertFieldJSON(t testing.TB, expected string, field Field) {
 	enc := newJSONEncoder()
 	defer enc.Free()
+
+	var out interface{}
+	err := json.Unmarshal([]byte("{"+expected+"}"), &out)
+	require.NoError(t, err,
+		"Expected JSON snippet %q must be valid for use in an object.", expected)
 
 	field.AddTo(enc)
 	assert.Equal(t, expected, string(enc.bytes),
@@ -124,6 +130,11 @@ func TestUintField(t *testing.T) {
 func TestUint64Field(t *testing.T) {
 	assertFieldJSON(t, `"foo":1`, Uint64("foo", uint64(1)))
 	assertCanBeReused(t, Uint64("foo", uint64(1)))
+}
+
+func TestUintptrField(t *testing.T) {
+	assertFieldJSON(t, `"foo":10`, Uintptr("foo", uintptr(0xa)))
+	assertCanBeReused(t, Uintptr("foo", uintptr(0xa)))
 }
 
 func TestStringField(t *testing.T) {

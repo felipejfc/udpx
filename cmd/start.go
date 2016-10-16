@@ -26,6 +26,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/felipejfc/udpx/api"
 	"github.com/felipejfc/udpx/proxy"
 	"github.com/spf13/cobra"
 	"github.com/uber-go/zap"
@@ -33,9 +34,10 @@ import (
 
 var debug bool
 var quiet bool
-var api bool
+var useApi bool
 var bindAddress string
 var bufferSize int
+var apiBindPort int
 var configPath string
 
 var startCmd = &cobra.Command{
@@ -66,7 +68,7 @@ environment variables to override configuration keys.`,
 		proxyConfigs := proxy.LoadProxyConfigsFromConfigFiles(configPath)
 
 		if len(proxyConfigs) == 0 {
-			if !api {
+			if !useApi {
 				cmdL.Fatal("no proxy config loaded")
 			} else {
 				cmdL.Warn("no proxy config loaded")
@@ -86,8 +88,18 @@ environment variables to override configuration keys.`,
 				zap.Int("upstream port", upstreamPort),
 			)
 			p := proxy.GetProxy(debug, ll, bindPort, bindAddress, upstreamAddress, upstreamPort, bufferSize, time.Duration(clientsTimeout)*time.Millisecond)
-			p.StartProxy()
+			p.Start()
 		}
+
+		if useApi {
+			ll := l.With(
+				zap.String("bind address", bindAddress),
+				zap.Int("bind port", apiBindPort),
+			)
+			a := api.GetApi(bindAddress, apiBindPort, debug, ll)
+			a.Start()
+		}
+
 		exitSignal := make(chan os.Signal)
 		<-exitSignal
 	},
@@ -96,9 +108,10 @@ environment variables to override configuration keys.`,
 func init() {
 	RootCmd.AddCommand(startCmd)
 	startCmd.Flags().IntVarP(&bufferSize, "bufferSize", "B", 4096, "Datagrams buffer size")
-	startCmd.Flags().StringVarP(&bindAddress, "bind", "b", "0.0.0.0", "Host to bind proxies")
+	startCmd.Flags().IntVarP(&apiBindPort, "apiBindPort", "p", 8080, "The port that udpx api will bind to")
+	startCmd.Flags().StringVarP(&bindAddress, "bind", "b", "0.0.0.0", "Host to bind proxies and api")
 	startCmd.Flags().StringVarP(&configPath, "configPath", "c", "./config", "Path to the folder containing the config files")
 	startCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode")
-	startCmd.Flags().BoolVarP(&api, "api", "a", false, "Start udpx api for managing upstreams dinamically")
+	startCmd.Flags().BoolVarP(&useApi, "api", "a", false, "Start udpx api for managing upstreams dinamically")
 	startCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Quiet mode (log level error)")
 }

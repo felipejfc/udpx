@@ -8,3 +8,5 @@ import:
   version: ^1.0.0
 - package: github.com/onsi/ginkgo
   version: ^1.2.0
+- package: github.com/labstack/echo
+  version: ^2.1.0

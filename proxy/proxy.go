@@ -192,7 +192,7 @@ func (p *Proxy) Close() {
 	p.connectionsLock.Unlock()
 }
 
-func (p *Proxy) StartProxy() {
+func (p *Proxy) Start() {
 	p.Logger.Info("Starting proxy")
 
 	ProxyAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", p.BindAddress, p.BindPort))

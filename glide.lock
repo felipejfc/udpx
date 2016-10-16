@@ -1,18 +1,70 @@
-hash: 6d629fc6d8c4e92620ef1c780b423d0dfcd99f3b311170b755b90e1f9efe8eff
-updated: 2016-10-15T21:38:51.049084597-03:00
+hash: ee1503cc36cef5164a06937b25eefd0c68af958cc43babb9c89033f0ae37b4f2
+updated: 2016-10-16T21:46:40.048378955-02:00
 imports:
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
+- name: github.com/labstack/echo
+  version: 04e6901d05b58ddbae579a6252a3d1bb3f334adc
+  subpackages:
+  - context
+  - engine
+  - engine/standard
+  - log
+- name: github.com/labstack/gommon
+  version: f3b1a1b3bd4726161e1200863d278df7da5e66ff
+  subpackages:
+  - color
+  - log
+- name: github.com/mattn/go-colorable
+  version: 6c903ff4aa50920ca86087a280590b36b3152b9c
+- name: github.com/mattn/go-isatty
+  version: 66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8
 - name: github.com/onsi/ginkgo
   version: 462326b1628e124b23f42e87a8f2750e3c4e2d24
+  subpackages:
+  - config
+  - internal/codelocation
+  - internal/containernode
+  - internal/failer
+  - internal/leafnodes
+  - internal/remote
+  - internal/spec
+  - internal/specrunner
+  - internal/suite
+  - internal/testingtproxy
+  - internal/writer
+  - reporters
+  - reporters/stenographer
+  - types
 - name: github.com/onsi/gomega
   version: a78ae492d53aad5a7a232d0d0462c14c400e3ee7
+  subpackages:
+  - format
+  - internal/assertion
+  - internal/asyncassertion
+  - internal/testingtsupport
+  - matchers
+  - matchers/support/goraph/bipartitegraph
+  - matchers/support/goraph/edge
+  - matchers/support/goraph/node
+  - matchers/support/goraph/util
+  - types
 - name: github.com/spf13/cobra
-  version: 7c674d9e72017ed25f6d2b5e497a1368086b6a6f
+  version: 856b96dcb49d6427babe192998a35190a12c2230
 - name: github.com/spf13/pflag
-  version: 6454a84b6da0ea8b628d5d8a26759f62c6c161b4
+  version: bf8481a6aebc13a8aab52e699ffe2e79771f5a3f
 - name: github.com/uber-go/atomic
   version: 0c9e689d64f004564b79d9a663634756df322902
 - name: github.com/uber-go/zap
-  version: d11d2851fcabcf03421c4dbdbc3146fc74eb1035
+  version: c4939d1166b2220bb45338e21506623b4bbdec50
+- name: github.com/valyala/fasttemplate
+  version: 3b874956e03f1636d171bda64b130f9135f42cff
+- name: golang.org/x/net
+  version: 8b4af36cd21a1f85a7484b49feb7c79363106d8e
+  subpackages:
+  - context
+- name: golang.org/x/sys
+  version: 002cbb5f952456d0c50e0d2aff17ea5eca716979
+  subpackages:
+  - unix
 testImports: []

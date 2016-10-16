@@ -34,7 +34,7 @@ type logRecord struct {
 	Fields  map[string]interface{} `json:"fields"`
 }
 
-func BenchmarkLogMarshalerFunc(b *testing.B) {
+func BenchmarkJSONLogMarshalerFunc(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		enc := NewJSONEncoder()
 		enc.AddMarshaler("nested", LogMarshalerFunc(func(kv KeyValue) error {
