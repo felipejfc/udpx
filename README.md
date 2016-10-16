@@ -1,5 +1,6 @@
 UDP-Proxy
 =========
+[![Build Status](https://travis-ci.org/felipejfc/udp-proxy.svg?branch=master)](https://travis-ci.org/felipejfc/udp-proxy)
 
 A Super Fast UDP Proxy that works as a NAT (has support to multiple clients) written in Golang.
 
