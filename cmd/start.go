@@ -65,7 +65,14 @@ environment variables to override configuration keys.`,
 		upstreamAddress := "localhost"
 		upstreamPort := 8830
 
-		p := proxy.GetProxy(debug, l, bindPort, bindAddress, upstreamAddress, upstreamPort, bufferSize, connTimeout)
+		l1 := l.With(
+			zap.String("bind address", bindAddress),
+			zap.Int("bind port", bindPort),
+			zap.String("upstream address", upstreamAddress),
+			zap.Int("upstream port", upstreamPort),
+		)
+
+		p := proxy.GetProxy(debug, l1, bindPort, bindAddress, upstreamAddress, upstreamPort, bufferSize, connTimeout)
 		cmdL.Debug("Proxy created successfully.")
 		p.StartProxy()
 	},

@@ -122,7 +122,9 @@ func (p *Proxy) handlePacket(srcAddr *net.UDPAddr, data []byte, size int) {
 
 	if !found {
 		conn, err := net.ListenUDP("udp", p.client)
-		p.Logger.Debug("new client connection", zap.String("local port", conn.LocalAddr().String()))
+		p.Logger.Debug("new client connection",
+			zap.String("local port", conn.LocalAddr().String()),
+		)
 
 		if err != nil {
 			p.Logger.Error("upd proxy failed to dial", zap.Error(err))
@@ -189,10 +191,7 @@ func (p *Proxy) Close() {
 }
 
 func (p *Proxy) StartProxy() {
-	p.Logger.Info("Starting proxy",
-		zap.String("BindAddress", p.BindAddress),
-		zap.Int("BindPort", p.BindPort),
-	)
+	p.Logger.Info("Starting proxy")
 
 	ProxyAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", p.BindAddress, p.BindPort))
 	CheckError(err)
