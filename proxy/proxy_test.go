@@ -23,6 +23,9 @@
 package proxy_test
 
 import (
+	"fmt"
+	"net"
+	"os"
 	"time"
 
 	. "github.com/felipejfc/udp-proxy/proxy"
@@ -35,7 +38,8 @@ import (
 var _ = Describe("Proxy", func() {
 
 	var (
-		testProxy *Proxy
+		testProxy    *Proxy
+		testUpstream *net.UDPConn
 	)
 
 	BeforeEach(func() {
@@ -47,16 +51,36 @@ var _ = Describe("Proxy", func() {
 		)
 		bindPort := 23456
 		bindAddress := "localhost"
-		upstreamAddr := "localhost"
+		upstreamAddress := "localhost"
 		upstreamPort := 34567
 		bufferSize := 4096
 		connTimeout := time.Second * 1
-		testProxy = GetProxy(debug, logger, bindPort, bindAddress, upstreamAddr, upstreamPort, bufferSize, connTimeout)
+		testProxy = GetProxy(debug, logger, bindPort, bindAddress, upstreamAddress, upstreamPort, bufferSize, connTimeout)
+		upstreamAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", upstreamAddress, upstreamPort))
+		if err != nil {
+			os.Exit(1)
+		}
+		testUpstream, err = net.ListenUDP("udp", upstreamAddr)
+		if err != nil {
+			os.Exit(1)
+		}
+	})
+
+	AfterEach(func() {
+		testProxy.Close()
+		testUpstream.Close()
 	})
 
 	Describe("GetProxy", func() {
 		It("Proxy should be configured", func() {
 			Expect(testProxy.BindPort).To(Equal(23456))
+			Expect(testProxy.UpstreamPort).To(Equal(34567))
+			Expect(testProxy.BufferSize).To(Equal(4096))
+			Expect(testProxy.ConnTimeout).To(Equal(time.Second * 1))
+			Expect(testProxy.Debug).To(Equal(false))
+			Expect(testProxy.BindAddress).To(Equal("localhost"))
+			Expect(testProxy.UpstreamAddress).To(Equal("localhost"))
 		})
 	})
+
 })

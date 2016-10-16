@@ -18,8 +18,8 @@ A Super Fast UDP Proxy that works as a NAT (has support to multiple clients) wri
 ### TODO
 - [ ] Add config
 - [x] Add command
-- [ ] Add tests
-- [ ] Travis CI and Code Coverage
+- [x] Add tests
+- [x] Travis CI and Code Coverage
 - [ ] Support to multiple upstreams
 - [ ] Dynamic resolve upstreams
 - [ ] Dynamically add upstreams

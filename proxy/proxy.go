@@ -74,6 +74,9 @@ func GetProxy(debug bool, logger zap.Logger, bindPort int, bindAddress string, u
 		ConnTimeout:     connTimeout,
 		UpstreamAddress: upstreamAddress,
 		UpstreamPort:    upstreamPort,
+		connectionsLock: new(sync.RWMutex),
+		connsMap:        make(map[string]connection),
+		closed:          false,
 	}
 
 	return proxy
@@ -186,7 +189,9 @@ func (p *Proxy) Close() {
 	for _, conn := range p.connsMap {
 		conn.udp.Close()
 	}
-	p.listenerConn.Close()
+	if p.listenerConn != nil {
+		p.listenerConn.Close()
+	}
 	p.connectionsLock.Unlock()
 }
 
@@ -195,9 +200,6 @@ func (p *Proxy) StartProxy() {
 
 	ProxyAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", p.BindAddress, p.BindPort))
 	CheckError(err)
-	p.connectionsLock = new(sync.RWMutex)
-	p.connsMap = make(map[string]connection)
-	p.Logger.Debug("Conns map and connections lock created")
 	p.upstream, err = net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", p.UpstreamAddress, p.UpstreamPort))
 	CheckError(err)
 	p.client = &net.UDPAddr{
