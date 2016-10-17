@@ -87,8 +87,12 @@ environment variables to override configuration keys.`,
 				zap.String("upstream address", upstreamAddress),
 				zap.Int("upstream port", upstreamPort),
 			)
-			p := proxy.GetProxy(debug, ll, bindPort, bindAddress, upstreamAddress, upstreamPort, bufferSize, time.Duration(clientsTimeout)*time.Millisecond)
-			p.Start()
+			if proxy.RegisterProxy(&proxyConfig) == true {
+				p := proxy.GetProxy(debug, ll, bindPort, bindAddress, upstreamAddress, upstreamPort, bufferSize, time.Duration(clientsTimeout)*time.Millisecond)
+				p.Start()
+			} else {
+				cmdL.Warn("proxy already loaded with the same bind port", zap.Int("bindPort", proxyConfig.BindPort))
+			}
 		}
 
 		if useApi {
