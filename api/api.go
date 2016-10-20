@@ -30,7 +30,7 @@ import (
 	"github.com/uber-go/zap"
 )
 
-type Api struct {
+type API struct {
 	BindAddress string
 	BindPort    int
 	http        *echo.Echo
@@ -38,26 +38,27 @@ type Api struct {
 	debug       bool
 }
 
-func GetApi(bindAddress string, bindPort int, debug bool, logger zap.Logger) *Api {
-	api := &Api{
+func GetAPI(bindAddress string, bindPort int, debug bool, logger zap.Logger) *API {
+	api := &API{
 		BindAddress: bindAddress,
 		BindPort:    bindPort,
 		http:        echo.New(),
 		debug:       debug,
 		logger:      logger,
 	}
-	api.configureApi()
+	api.configureAPI()
 	return api
 }
 
-func (a *Api) configureApi() {
+func (a *API) configureAPI() {
 	a.http.GET("/healthcheck", HealthCheckHandler)
-	//a.http.POST("/proxy", NewProxyHandler)
-	//a.http.GET("/proxy/:bindPort", GetProxyByBindPortHandler)
+	a.http.POST("/proxy", NewProxyHandler)
+	a.http.GET("/proxy/:port", GetProxyByBindPortHandler)
+	a.http.DELETE("/proxy/:port", UnregisterProxyByPortHandler)
 	a.logger.Debug("api configured!")
 }
 
-func (a *Api) Start() {
+func (a *API) Start() {
 	go a.http.Run(standard.New(fmt.Sprintf(":%d", a.BindPort)))
 	a.logger.Info("api started!")
 }

@@ -147,11 +147,12 @@ func (p *Proxy) handlePacket(srcAddr *net.UDPAddr, data []byte, size int) {
 }
 
 func (p *Proxy) readLoop() {
-	for {
+	for !p.closed {
 		buffer := make([]byte, p.BufferSize)
 		size, srcAddress, err := p.listenerConn.ReadFromUDP(buffer)
 		if err != nil {
 			p.Logger.Error("error", zap.Error(err))
+			continue
 		}
 		go p.handlePacket(srcAddress, buffer, size)
 	}
@@ -181,6 +182,7 @@ func (p *Proxy) freeIdleSocketsLoop() {
 }
 
 func (p *Proxy) Close() {
+	p.Logger.Warn("Closing proxy")
 	p.connectionsLock.Lock()
 	p.closed = true
 	for _, conn := range p.connsMap {

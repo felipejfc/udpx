@@ -24,7 +24,6 @@ package cmd
 
 import (
 	"os"
-	"time"
 
 	"github.com/felipejfc/udpx/api"
 	"github.com/felipejfc/udpx/proxy"
@@ -34,7 +33,7 @@ import (
 
 var debug bool
 var quiet bool
-var useApi bool
+var useAPI bool
 var bindAddress string
 var bufferSize int
 var apiBindPort int
@@ -68,39 +67,29 @@ environment variables to override configuration keys.`,
 		proxyConfigs := proxy.LoadProxyConfigsFromConfigFiles(configPath)
 
 		if len(proxyConfigs) == 0 {
-			if !useApi {
+			if !useAPI {
 				cmdL.Fatal("no proxy config loaded")
 			} else {
 				cmdL.Warn("no proxy config loaded")
 			}
 		}
 
+		pm := proxy.GetManager()
+		pm.Configure(debug, l, bindAddress, bufferSize)
+
 		for _, proxyConfig := range proxyConfigs {
 			//TODO guardar proxies e verificar conflitos de bind port
-			bindPort := proxyConfig.BindPort
-			upstreamAddress := proxyConfig.UpstreamAddress
-			upstreamPort := proxyConfig.UpstreamPort
-			clientsTimeout := proxyConfig.ClientsTimeout
-			ll := l.With(
-				zap.String("bind address", bindAddress),
-				zap.Int("bind port", bindPort),
-				zap.String("upstream address", upstreamAddress),
-				zap.Int("upstream port", upstreamPort),
-			)
-			if proxy.RegisterProxy(&proxyConfig) == true {
-				p := proxy.GetProxy(debug, ll, bindPort, bindAddress, upstreamAddress, upstreamPort, bufferSize, time.Duration(clientsTimeout)*time.Millisecond)
-				p.Start()
-			} else {
+			if pm.RegisterProxy(proxyConfig) != true {
 				cmdL.Warn("proxy already loaded with the same bind port", zap.Int("bindPort", proxyConfig.BindPort))
 			}
 		}
 
-		if useApi {
+		if useAPI {
 			ll := l.With(
 				zap.String("bind address", bindAddress),
 				zap.Int("bind port", apiBindPort),
 			)
-			a := api.GetApi(bindAddress, apiBindPort, debug, ll)
+			a := api.GetAPI(bindAddress, apiBindPort, debug, ll)
 			a.Start()
 		}
 
@@ -116,6 +105,6 @@ func init() {
 	startCmd.Flags().StringVarP(&bindAddress, "bind", "b", "0.0.0.0", "Host to bind proxies and api")
 	startCmd.Flags().StringVarP(&configPath, "configPath", "c", "./config", "Path to the folder containing the config files")
 	startCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode")
-	startCmd.Flags().BoolVarP(&useApi, "api", "a", false, "Start udpx api for managing upstreams dinamically")
+	startCmd.Flags().BoolVarP(&useAPI, "api", "a", false, "Start udpx api for managing upstreams dinamically")
 	startCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Quiet mode (log level error)")
 }
