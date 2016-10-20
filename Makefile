@@ -43,7 +43,7 @@ build-cross-linux:
 	@echo "Building for linux-x86_64..."
 	@env GOOS=linux GOARCH=amd64 go build -o ./bin/udpx-linux-x86_64 ./main.go
 
-image: build-cross-linux build-exec
+image:
 	docker build -t udpx .
 
 run:
