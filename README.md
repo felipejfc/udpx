@@ -27,4 +27,4 @@ A Super Fast UDP Proxy that works as a NAT (has support to multiple clients) wri
 - [ ] Persist proxy state between reboots?
 - [ ] Docs
 - [ ] Performance tests
-- [ ] Docker
+- [X] Docker

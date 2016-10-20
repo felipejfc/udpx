@@ -24,6 +24,28 @@ build:
 	@mkdir -p bin
 	@go build -o bin/udpx
 
+build-cross: build-cross-darwin build-cross-linux build-exec
+
+build-exec:
+	@chmod u+x bin/*
+
+build-cross-darwin:
+	@mkdir -p ./bin
+	@echo "Building for darwin-i386..."
+	@env GOOS=darwin GOARCH=386 go build -o ./bin/udpx-darwin-i386 ./main.go
+	@echo "Building for darwin-x86_64..."
+	@env GOOS=darwin GOARCH=amd64 go build -o ./bin/udpx-darwin-x86_64 ./main.go
+
+build-cross-linux:
+	@mkdir -p ./bin
+	@echo "Building for linux-i386..."
+	@env GOOS=linux GOARCH=386 go build -o ./bin/udpx-linux-i386 ./main.go
+	@echo "Building for linux-x86_64..."
+	@env GOOS=linux GOARCH=amd64 go build -o ./bin/udpx-linux-x86_64 ./main.go
+
+image: build-cross-linux build-exec
+	docker build -t udpx .
+
 run:
 	@go run main.go start
 

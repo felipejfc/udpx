@@ -38,7 +38,7 @@ type Api struct {
 	debug       bool
 }
 
-func GetApi(bindAddress string, bindPort int, debug bool, logger zap.Logger) *Api{
+func GetApi(bindAddress string, bindPort int, debug bool, logger zap.Logger) *Api {
 	api := &Api{
 		BindAddress: bindAddress,
 		BindPort:    bindPort,
@@ -52,6 +52,8 @@ func GetApi(bindAddress string, bindPort int, debug bool, logger zap.Logger) *Ap
 
 func (a *Api) configureApi() {
 	a.http.GET("/healthcheck", HealthCheckHandler)
+	//a.http.POST("/proxy", NewProxyHandler)
+	//a.http.GET("/proxy/:bindPort", GetProxyByBindPortHandler)
 	a.logger.Debug("api configured!")
 }
 
