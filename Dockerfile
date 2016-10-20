@@ -22,11 +22,21 @@ FROM golang:1.7.3-alpine
 
 MAINTAINER Felipe Cavalcanti <fjfcavalcanti@gmail.com>
 
-RUN mkdir /app
-WORKDIR /app
+RUN apk update
+RUN apk add make
 
-COPY bin/udpx-linux-x86_64 /app/udpx
-ADD ./config /app/config
+RUN mkdir -p /go/src/github.com/felipejfc/udpx
+WORKDIR /go/src/github.com/felipejfc/udpx
+
+ADD . /go/src/github.com/felipejfc/udpx
+RUN make build-cross-linux
+
+RUN mkdir /app
+RUN mv /go/src/github.com/felipejfc/udpx/bin/udpx-linux-x86_64 /app/udpx
+RUN mv /go/src/github.com/felipejfc/udpx/config /app/config
+RUN rm -r /go/src/github.com/felipejfc/udpx
+
+WORKDIR /app
 
 EXPOSE 8080
 VOLUME /app/config
