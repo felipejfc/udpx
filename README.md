@@ -18,7 +18,7 @@ A Super Fast UDP Proxy that works as a NAT (has support to multiple clients) wri
 ### TODO
 - [x] Add config
 - [x] Add command
-- [x] Add tests
+- [x] Add tests infrastructure
 - [x] Travis CI and Code Coverage
 - [x] Support to multiple upstreams
 - [ ] Dynamically resolve upstreams
@@ -28,4 +28,5 @@ A Super Fast UDP Proxy that works as a NAT (has support to multiple clients) wri
 - [ ] Persist proxy state between reboots?
 - [ ] Docs
 - [ ] Performance tests
+- [ ] Add more tests
 - [X] Docker
