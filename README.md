@@ -24,6 +24,7 @@ A Super Fast UDP Proxy that works as a NAT (has support to multiple clients) wri
 - [ ] Dynamically resolve upstreams
 - [x] Dynamically add proxies
 - [x] Dynamically remove proxies
+- [ ] Reload connection to upstream when it closes
 - [ ] Can persist upstreams
 - [ ] Persist proxy state between reboots?
 - [ ] Docs
