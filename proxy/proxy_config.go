@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 )
 
 type ProxyInstance struct {
@@ -48,12 +49,22 @@ func ParseConfig(configFilePath string) []ProxyInstance {
 	return proxyConfig.ProxyConfigs
 }
 
+func IsDirectory(path string) (bool, error) {
+	fileInfo, err := os.Stat(path)
+	return fileInfo.IsDir(), err
+}
+
 func LoadProxyConfigsFromConfigFiles(configPath string) []ProxyInstance {
 	files, err := ioutil.ReadDir(configPath)
 	var proxyConfigs []ProxyInstance
 	CheckError(err)
 	for _, f := range files {
-		configs := ParseConfig(fmt.Sprintf("%s/%s", configPath, f.Name()))
+		filePath := fmt.Sprintf("%s/%s", configPath, f.Name())
+		fileInfo, _ := os.Stat(filePath)
+		if fileInfo.IsDir() == true {
+			continue
+		}
+		configs := ParseConfig(filePath)
 		for _, c := range configs {
 			proxyConfigs = append(proxyConfigs, c)
 		}
