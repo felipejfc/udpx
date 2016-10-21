@@ -138,10 +138,10 @@ func (p *Proxy) handlePacket(srcAddr *net.UDPAddr, data []byte, size int) {
 		}
 		p.connectionsLock.Unlock()
 
-		conn.WriteTo(data, p.upstream)
+		conn.WriteTo(data[:size], p.upstream)
 		p.clientConnectionReadLoop(srcAddr, conn)
 	} else {
-		conn.udp.WriteTo(data, p.upstream)
+		conn.udp.WriteTo(data[:size], p.upstream)
 		p.updateClientLastActivity(srcAddr)
 	}
 }
