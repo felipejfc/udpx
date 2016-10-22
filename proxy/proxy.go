@@ -144,7 +144,18 @@ func (p *Proxy) handlePacket(srcAddr *net.UDPAddr, data []byte, size int) {
 		p.clientConnectionReadLoop(srcAddr, conn)
 	} else {
 		conn.udp.WriteTo(data[:size], p.upstream)
-		p.updateClientLastActivity(srcAddr)
+		p.connectionsLock.RLock()
+		shouldUpdateLastActivity := false
+		if _, found := p.connsMap[srcAddr.String()]; found {
+			if p.connsMap[srcAddr.String()].lastActivity.Before(
+				time.Now().Add(-p.ConnTimeout / 4)) {
+				shouldUpdateLastActivity = true
+			}
+		}
+		p.connectionsLock.RUnlock()
+		if shouldUpdateLastActivity {
+			p.updateClientLastActivity(srcAddr)
+		}
 	}
 }
 

@@ -25,8 +25,10 @@ A Super Fast UDP Proxy that works as a NAT (has support to multiple clients) wri
 - [x] Dynamically add proxies
 - [x] Dynamically remove proxies
 - [x] Resolve new upstream addr if it changes
+- [x] Make timeout logic faster by making less updates
 - [ ] Dynamically added proxies must be shared my multiple udpx instances
 - [ ] Can persist upstreams
+- [ ] Print statistics of messages sent and clients active /sec
 - [ ] Persist proxy state between reboots?
 - [ ] Docs
 - [ ] Performance tests
