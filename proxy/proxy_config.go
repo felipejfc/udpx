@@ -31,9 +31,11 @@ import (
 
 type ProxyInstance struct {
 	BindPort        int    `json:"bindPort"`
-	ClientsTimeout  int    `json:"clientsTimeout"`
+	ClientTimeout   int    `json:"clientTimeout"`
 	UpstreamAddress string `json:"upstreamAddress"`
 	UpstreamPort    int    `json:"upstreamPort"`
+	Name            string `json:"name"`
+	ResolveTTL      int    `json:"resolveTTL"`
 }
 
 type ProxyConfig struct {

@@ -36,9 +36,6 @@ func NewProxyHandler(c echo.Context) error {
 	if err := c.Bind(p); err != nil {
 		return err
 	}
-	if p.ClientsTimeout == 0 {
-		return c.String(http.StatusUnprocessableEntity, "clientsTimeout required")
-	}
 	if p.BindPort == 0 {
 		return c.String(http.StatusUnprocessableEntity, "bindPort required")
 	}
@@ -48,7 +45,9 @@ func NewProxyHandler(c echo.Context) error {
 	if p.UpstreamAddress == "" {
 		return c.String(http.StatusUnprocessableEntity, "upstreamAddress required")
 	}
-
+	if p.Name == "" {
+		return c.String(http.StatusUnprocessableEntity, "name required")
+	}
 	if pm.RegisterProxy(*p) != true {
 		return c.String(http.StatusConflict, fmt.Sprintf("some proxy might already be listening on port %d", p.BindPort))
 	}

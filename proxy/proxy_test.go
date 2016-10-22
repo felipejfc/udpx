@@ -55,7 +55,8 @@ var _ = Describe("Proxy", func() {
 		upstreamPort := 34567
 		bufferSize := 4096
 		connTimeout := time.Second * 1
-		testProxy = GetProxy(debug, logger, bindPort, bindAddress, upstreamAddress, upstreamPort, bufferSize, connTimeout)
+		resolveTTL := time.Second * 1
+		testProxy = GetProxy(debug, logger, bindPort, bindAddress, upstreamAddress, upstreamPort, bufferSize, connTimeout, resolveTTL)
 		upstreamAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", upstreamAddress, upstreamPort))
 		if err != nil {
 			os.Exit(1)

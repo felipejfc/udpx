@@ -31,10 +31,12 @@ import (
 )
 
 type Manager struct {
-	Debug       bool
-	Logger      zap.Logger
-	BindAddress string
-	BufferSize  int
+	Debug                bool
+	Logger               zap.Logger
+	BindAddress          string
+	BufferSize           int
+	DefaultClientTimeout int
+	DefaultResolveTTL    int
 }
 
 var ProxyConfigStorage = make(map[string]*ProxyInstance)
@@ -49,12 +51,14 @@ func GetManager() *Manager {
 	return instance
 }
 
-func (p *Manager) Configure(debug bool, logger zap.Logger, bindAddress string, bufferSize int) {
+func (p *Manager) Configure(debug bool, logger zap.Logger, bindAddress string, bufferSize int, defaultClientTimeout int, defaultResolveTTL int) {
 	p.Logger = logger
 	p.Debug = debug
 	p.BindAddress = bindAddress
 	p.BufferSize = bufferSize
-	p.Logger.Info("proxy manager configured!", zap.Bool("debug", p.Debug), zap.String("bindAddress", p.BindAddress), zap.Int("bufferSize", p.BufferSize))
+	p.DefaultClientTimeout = defaultClientTimeout
+	p.DefaultResolveTTL = defaultResolveTTL
+	p.Logger.Info("proxy manager configured!", zap.Bool("debug", p.Debug), zap.String("bindAddress", p.BindAddress), zap.Int("bufferSize", p.BufferSize), zap.Int("defaultResolveTTL", defaultResolveTTL), zap.Int("defaultClientTimeout", defaultClientTimeout))
 }
 
 func (p *Manager) RegisterProxy(proxyInstance ProxyInstance) bool {
@@ -64,13 +68,22 @@ func (p *Manager) RegisterProxy(proxyInstance ProxyInstance) bool {
 		return false
 	}
 	ProxyConfigStorage[bindPortString] = &proxyInstance
+	if proxyInstance.ClientTimeout == 0 {
+		proxyInstance.ClientTimeout = p.DefaultClientTimeout
+	}
+	if proxyInstance.ResolveTTL == 0 {
+		proxyInstance.ResolveTTL = p.DefaultResolveTTL
+	}
 	ll := p.Logger.With(
 		zap.String("bind address", p.BindAddress),
 		zap.Int("bind port", proxyInstance.BindPort),
 		zap.String("upstream address", proxyInstance.UpstreamAddress),
 		zap.Int("upstream port", proxyInstance.UpstreamPort),
+		zap.String("name", proxyInstance.Name),
+		zap.Int("resolveTTL", proxyInstance.ResolveTTL),
+		zap.Int("clientTimeout", proxyInstance.ClientTimeout),
 	)
-	pp := GetProxy(p.Debug, ll, proxyInstance.BindPort, p.BindAddress, proxyInstance.UpstreamAddress, proxyInstance.UpstreamPort, p.BufferSize, time.Duration(proxyInstance.ClientsTimeout)*time.Millisecond)
+	pp := GetProxy(p.Debug, ll, proxyInstance.BindPort, p.BindAddress, proxyInstance.UpstreamAddress, proxyInstance.UpstreamPort, p.BufferSize, time.Duration(proxyInstance.ClientTimeout)*time.Millisecond, time.Duration(proxyInstance.ResolveTTL)*time.Millisecond)
 	ProxyStorage[bindPortString] = pp
 	pp.Start()
 	return true

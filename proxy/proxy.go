@@ -56,12 +56,13 @@ type Proxy struct {
 	upstream        *net.UDPAddr
 	BufferSize      int
 	ConnTimeout     time.Duration
+	ResolveTTL      time.Duration
 	connsMap        map[string]connection
 	connectionsLock *sync.RWMutex
 	closed          bool
 }
 
-func GetProxy(debug bool, logger zap.Logger, bindPort int, bindAddress string, upstreamAddress string, upstreamPort int, bufferSize int, connTimeout time.Duration) *Proxy {
+func GetProxy(debug bool, logger zap.Logger, bindPort int, bindAddress string, upstreamAddress string, upstreamPort int, bufferSize int, connTimeout time.Duration, resolveTTL time.Duration) *Proxy {
 	proxy := &Proxy{
 		Debug:           debug,
 		Logger:          logger,
@@ -74,6 +75,7 @@ func GetProxy(debug bool, logger zap.Logger, bindPort int, bindAddress string, u
 		connectionsLock: new(sync.RWMutex),
 		connsMap:        make(map[string]connection),
 		closed:          false,
+		ResolveTTL:      resolveTTL,
 	}
 
 	return proxy
@@ -158,6 +160,21 @@ func (p *Proxy) readLoop() {
 	}
 }
 
+func (p *Proxy) resolveUpstreamLoop() {
+	for !p.closed {
+		time.Sleep(p.ResolveTTL)
+		upstreamAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", p.UpstreamAddress, p.UpstreamPort))
+		if err != nil {
+			p.Logger.Error("resolve error", zap.Error(err))
+			continue
+		}
+		if p.upstream.String() != upstreamAddr.String() {
+			p.upstream = upstreamAddr
+			p.Logger.Info("upstream addr changed", zap.String("upstreamAddr", p.upstream.String()))
+		}
+	}
+}
+
 func (p *Proxy) freeIdleSocketsLoop() {
 	for !p.closed {
 		time.Sleep(p.ConnTimeout)
@@ -218,6 +235,15 @@ func (p *Proxy) Start() {
 		return
 	}
 	p.Logger.Info("UDP Proxy started!")
-	go p.freeIdleSocketsLoop()
+	if p.ConnTimeout.Nanoseconds() > 0 {
+		go p.freeIdleSocketsLoop()
+	} else {
+		p.Logger.Warn("be warned that running without timeout to clients may be dangerous")
+	}
+	if p.ResolveTTL.Nanoseconds() > 0 {
+		go p.resolveUpstreamLoop()
+	} else {
+		p.Logger.Warn("not refreshing upstream addr")
+	}
 	go p.readLoop()
 }

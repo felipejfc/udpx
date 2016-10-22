@@ -2,15 +2,19 @@
   "proxyConfigs": [
     {
       "bindPort": 10000,
-      "clientsTimeout": 1000,
       "upstreamAddress": "localhost",
-      "upstreamPort": 8830
+      "clientTimeout": 1000,
+      "upstreamPort": 8830,
+      "name": "exampleStream1",
+      "resolveTTL": 30000
     },
     {
       "bindPort": 10001,
-      "clientsTimeout": 800,
       "upstreamAddress": "localhost",
-      "upstreamPort": 8831
+      "clientTimeout": 800,
+      "upstreamPort": 8831,
+      "name": "exampleStream1",
+      "resolveTTL": 25000
     }
   ]
 }

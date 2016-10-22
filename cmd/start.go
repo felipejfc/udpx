@@ -38,6 +38,8 @@ var bindAddress string
 var bufferSize int
 var apiBindPort int
 var configPath string
+var defaultClientTimeout int
+var defaultResolveTTL int
 
 var startCmd = &cobra.Command{
 	Use:   "start",
@@ -75,7 +77,7 @@ environment variables to override configuration keys.`,
 		}
 
 		pm := proxy.GetManager()
-		pm.Configure(debug, l, bindAddress, bufferSize)
+		pm.Configure(debug, l, bindAddress, bufferSize, defaultClientTimeout, defaultResolveTTL)
 
 		for _, proxyConfig := range proxyConfigs {
 			//TODO guardar proxies e verificar conflitos de bind port
@@ -107,4 +109,6 @@ func init() {
 	startCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode")
 	startCmd.Flags().BoolVarP(&useAPI, "api", "a", false, "Start udpx api for managing upstreams dinamically")
 	startCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Quiet mode (log level error)")
+	startCmd.Flags().IntVarP(&defaultClientTimeout, "defaultClientTimeout", "t", 1000, "The default client timeout that the proxies will use")
+	startCmd.Flags().IntVarP(&defaultResolveTTL, "defaultResolveTTL", "T", 30000, "The default time that the proxies will keep the upstream ip resolution cached")
 }
