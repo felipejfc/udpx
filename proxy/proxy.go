@@ -44,38 +44,47 @@ type connection struct {
 	lastActivity time.Time
 }
 
+type packet struct {
+	src  *net.UDPAddr
+	data []byte
+}
+
 type Proxy struct {
-	Logger          zap.Logger
-	BindPort        int
-	BindAddress     string
-	UpstreamAddress string
-	UpstreamPort    int
-	Debug           bool
-	listenerConn    *net.UDPConn
-	client          *net.UDPAddr
-	upstream        *net.UDPAddr
-	BufferSize      int
-	ConnTimeout     time.Duration
-	ResolveTTL      time.Duration
-	connsMap        map[string]connection
-	connectionsLock *sync.RWMutex
-	closed          bool
+	Logger                 zap.Logger
+	BindPort               int
+	BindAddress            string
+	UpstreamAddress        string
+	UpstreamPort           int
+	Debug                  bool
+	listenerConn           *net.UDPConn
+	client                 *net.UDPAddr
+	upstream               *net.UDPAddr
+	BufferSize             int
+	ConnTimeout            time.Duration
+	ResolveTTL             time.Duration
+	connsMap               map[string]connection
+	connectionsLock        *sync.RWMutex
+	closed                 bool
+	clientMessageChannel   chan (packet)
+	upstreamMessageChannel chan (packet)
 }
 
 func GetProxy(debug bool, logger zap.Logger, bindPort int, bindAddress string, upstreamAddress string, upstreamPort int, bufferSize int, connTimeout time.Duration, resolveTTL time.Duration) *Proxy {
 	proxy := &Proxy{
-		Debug:           debug,
-		Logger:          logger,
-		BindPort:        bindPort,
-		BindAddress:     bindAddress,
-		BufferSize:      bufferSize,
-		ConnTimeout:     connTimeout,
-		UpstreamAddress: upstreamAddress,
-		UpstreamPort:    upstreamPort,
-		connectionsLock: new(sync.RWMutex),
-		connsMap:        make(map[string]connection),
-		closed:          false,
-		ResolveTTL:      resolveTTL,
+		Debug:                  debug,
+		Logger:                 logger,
+		BindPort:               bindPort,
+		BindAddress:            bindAddress,
+		BufferSize:             bufferSize,
+		ConnTimeout:            connTimeout,
+		UpstreamAddress:        upstreamAddress,
+		UpstreamPort:           upstreamPort,
+		connectionsLock:        new(sync.RWMutex),
+		connsMap:               make(map[string]connection),
+		closed:                 false,
+		ResolveTTL:             resolveTTL,
+		clientMessageChannel:   make(chan packet),
+		upstreamMessageChannel: make(chan packet),
 	}
 
 	return proxy
@@ -104,57 +113,67 @@ func (p *Proxy) clientConnectionReadLoop(clientAddr *net.UDPAddr, upstreamConn *
 			return
 		}
 		p.updateClientLastActivity(clientAddr)
-		go func(data []byte, clientAddr *net.UDPAddr) {
-			p.listenerConn.WriteTo(data, clientAddr)
-			p.Logger.Debug("forwarded data from upstream", zap.Int("size", size), zap.String("data", string(buffer[:size])))
-		}(buffer[:size], clientAddr)
+		p.upstreamMessageChannel <- packet{
+			src:  clientAddr,
+			data: buffer[:size],
+		}
 	}
 }
 
-func (p *Proxy) handlePacket(srcAddr *net.UDPAddr, data []byte, size int) {
-	p.Logger.Debug("packet received",
-		zap.String("src address", srcAddr.String()),
-		zap.Int("src port", srcAddr.Port),
-		zap.String("packet", string(data[:size])),
-	)
+func (p *Proxy) handlerUpstreamPackets() {
+	for pa := range p.upstreamMessageChannel {
+		p.Logger.Debug("forwarded data from upstream", zap.Int("size", len(pa.data)), zap.String("data", string(pa.data)))
+		p.listenerConn.WriteTo(pa.data, pa.src)
+	}
+}
 
-	p.connectionsLock.RLock()
-	conn, found := p.connsMap[srcAddr.String()]
-	p.connectionsLock.RUnlock()
-
-	if !found {
-		conn, err := net.ListenUDP("udp", p.client)
-		p.Logger.Debug("new client connection",
-			zap.String("local port", conn.LocalAddr().String()),
+func (p *Proxy) handleClientPackets() {
+	for pa := range p.clientMessageChannel {
+		p.Logger.Debug("packet received",
+			zap.String("src address", pa.src.String()),
+			zap.Int("src port", pa.src.Port),
+			zap.String("packet", string(pa.data)),
+			zap.Int("size", len(pa.data)),
 		)
 
-		if err != nil {
-			p.Logger.Error("upd proxy failed to dial", zap.Error(err))
-			return
-		}
-
-		p.connectionsLock.Lock()
-		p.connsMap[srcAddr.String()] = connection{
-			udp:          conn,
-			lastActivity: time.Now(),
-		}
-		p.connectionsLock.Unlock()
-
-		conn.WriteTo(data[:size], p.upstream)
-		p.clientConnectionReadLoop(srcAddr, conn)
-	} else {
-		conn.udp.WriteTo(data[:size], p.upstream)
 		p.connectionsLock.RLock()
-		shouldUpdateLastActivity := false
-		if _, found := p.connsMap[srcAddr.String()]; found {
-			if p.connsMap[srcAddr.String()].lastActivity.Before(
-				time.Now().Add(-p.ConnTimeout / 4)) {
-				shouldUpdateLastActivity = true
-			}
-		}
+		conn, found := p.connsMap[pa.src.String()]
 		p.connectionsLock.RUnlock()
-		if shouldUpdateLastActivity {
-			p.updateClientLastActivity(srcAddr)
+
+		if !found {
+			conn, err := net.ListenUDP("udp", p.client)
+			p.Logger.Debug("new client connection",
+				zap.String("local port", conn.LocalAddr().String()),
+			)
+
+			if err != nil {
+				p.Logger.Error("upd proxy failed to dial", zap.Error(err))
+				return
+			}
+
+			p.connectionsLock.Lock()
+			p.connsMap[pa.src.String()] = connection{
+				udp:          conn,
+				lastActivity: time.Now(),
+			}
+			p.connectionsLock.Unlock()
+
+			conn.WriteTo(pa.data, p.upstream)
+			go p.clientConnectionReadLoop(pa.src, conn)
+		} else {
+			conn.udp.WriteTo(pa.data, p.upstream)
+			p.connectionsLock.RLock()
+			shouldUpdateLastActivity := false
+			if _, found := p.connsMap[pa.src.String()]; found {
+				if p.connsMap[pa.src.String()].lastActivity.Before(
+					time.Now().Add(-p.ConnTimeout / 4)) {
+					shouldUpdateLastActivity = true
+				}
+			}
+			p.connectionsLock.RUnlock()
+			if shouldUpdateLastActivity {
+				p.updateClientLastActivity(pa.src)
+			}
 		}
 	}
 }
@@ -167,7 +186,10 @@ func (p *Proxy) readLoop() {
 			p.Logger.Error("error", zap.Error(err))
 			continue
 		}
-		go p.handlePacket(srcAddress, buffer, size)
+		p.clientMessageChannel <- packet{
+			src:  srcAddress,
+			data: buffer[:size],
+		}
 	}
 }
 
@@ -255,5 +277,7 @@ func (p *Proxy) Start() {
 	} else {
 		p.Logger.Warn("not refreshing upstream addr")
 	}
+	go p.handlerUpstreamPackets()
+	go p.handleClientPackets()
 	go p.readLoop()
 }
