@@ -106,17 +106,17 @@ func (p *Proxy) clientConnectionReadLoop(clientAddr *net.UDPAddr, upstreamConn *
 		p.updateClientLastActivity(clientAddr)
 		go func(data []byte, clientAddr *net.UDPAddr) {
 			p.listenerConn.WriteTo(data, clientAddr)
-			p.Logger.Debug("forwarded data from upstream", zap.Int("size", size), zap.String("data", string(buffer[:size])))
+			//p.Logger.Debug("forwarded data from upstream", zap.Int("size", size), zap.String("data", string(buffer[:size])))
 		}(buffer[:size], clientAddr)
 	}
 }
 
 func (p *Proxy) handlePacket(srcAddr *net.UDPAddr, data []byte, size int) {
-	p.Logger.Debug("packet received",
-		zap.String("src address", srcAddr.String()),
-		zap.Int("src port", srcAddr.Port),
-		zap.String("packet", string(data[:size])),
-	)
+	//p.Logger.Debug("packet received",
+	//	zap.String("src address", srcAddr.String()),
+	//	zap.Int("src port", srcAddr.Port),
+	//	zap.String("packet", string(data[:size])),
+	//)
 
 	p.connectionsLock.RLock()
 	conn, found := p.connsMap[srcAddr.String()]
