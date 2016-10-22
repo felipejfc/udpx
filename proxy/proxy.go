@@ -222,7 +222,6 @@ func (p *Proxy) Start() {
 	p.upstream, err = net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", p.UpstreamAddress, p.UpstreamPort))
 	if err != nil {
 		p.Logger.Error("error resolving upstream address", zap.Error(err))
-		return
 	}
 	p.client = &net.UDPAddr{
 		IP:   ProxyAddr.IP,
