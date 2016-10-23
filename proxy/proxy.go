@@ -90,29 +90,30 @@ func GetProxy(debug bool, logger zap.Logger, bindPort int, bindAddress string, u
 	return proxy
 }
 
-func (p *Proxy) updateClientLastActivity(clientAddr *net.UDPAddr) {
-	p.Logger.Debug("updating client last activity", zap.String("client", clientAddr.String()))
+func (p *Proxy) updateClientLastActivity(clientAddrString string) {
+	p.Logger.Debug("updating client last activity", zap.String("client", clientAddrString))
 	p.connectionsLock.Lock()
-	if _, found := p.connsMap[clientAddr.String()]; found {
-		connWrapper := p.connsMap[clientAddr.String()]
+	if _, found := p.connsMap[clientAddrString]; found {
+		connWrapper := p.connsMap[clientAddrString]
 		connWrapper.lastActivity = time.Now()
-		p.connsMap[clientAddr.String()] = connWrapper
+		p.connsMap[clientAddrString] = connWrapper
 	}
 	p.connectionsLock.Unlock()
 }
 
 func (p *Proxy) clientConnectionReadLoop(clientAddr *net.UDPAddr, upstreamConn *net.UDPConn) {
+	clientAddrString := clientAddr.String()
 	for {
 		buffer := make([]byte, p.BufferSize)
 		size, _, err := upstreamConn.ReadFromUDP(buffer)
 		if err != nil {
 			p.connectionsLock.Lock()
 			upstreamConn.Close()
-			delete(p.connsMap, clientAddr.String())
+			delete(p.connsMap, clientAddrString)
 			p.connectionsLock.Unlock()
 			return
 		}
-		p.updateClientLastActivity(clientAddr)
+		p.updateClientLastActivity(clientAddrString)
 		p.upstreamMessageChannel <- packet{
 			src:  clientAddr,
 			data: buffer[:size],
@@ -129,15 +130,16 @@ func (p *Proxy) handlerUpstreamPackets() {
 
 func (p *Proxy) handleClientPackets() {
 	for pa := range p.clientMessageChannel {
+		packetSourceString := pa.src.String()
 		p.Logger.Debug("packet received",
-			zap.String("src address", pa.src.String()),
+			zap.String("src address", packetSourceString),
 			zap.Int("src port", pa.src.Port),
 			zap.String("packet", string(pa.data)),
 			zap.Int("size", len(pa.data)),
 		)
 
 		p.connectionsLock.RLock()
-		conn, found := p.connsMap[pa.src.String()]
+		conn, found := p.connsMap[packetSourceString]
 		p.connectionsLock.RUnlock()
 
 		if !found {
@@ -152,7 +154,7 @@ func (p *Proxy) handleClientPackets() {
 			}
 
 			p.connectionsLock.Lock()
-			p.connsMap[pa.src.String()] = connection{
+			p.connsMap[packetSourceString] = connection{
 				udp:          conn,
 				lastActivity: time.Now(),
 			}
@@ -164,15 +166,15 @@ func (p *Proxy) handleClientPackets() {
 			conn.udp.WriteTo(pa.data, p.upstream)
 			p.connectionsLock.RLock()
 			shouldUpdateLastActivity := false
-			if _, found := p.connsMap[pa.src.String()]; found {
-				if p.connsMap[pa.src.String()].lastActivity.Before(
+			if _, found := p.connsMap[packetSourceString]; found {
+				if p.connsMap[packetSourceString].lastActivity.Before(
 					time.Now().Add(-p.ConnTimeout / 4)) {
 					shouldUpdateLastActivity = true
 				}
 			}
 			p.connectionsLock.RUnlock()
 			if shouldUpdateLastActivity {
-				p.updateClientLastActivity(pa.src)
+				p.updateClientLastActivity(packetSourceString)
 			}
 		}
 	}
