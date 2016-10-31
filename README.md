@@ -4,6 +4,7 @@ UDPX
 [![Coverage Status](https://coveralls.io/repos/github/felipejfc/udpx/badge.svg)](https://coveralls.io/github/felipejfc/udpx)
 [![Code Climate](https://codeclimate.com/github/felipejfc/udpx/badges/gpa.svg)](https://codeclimate.com/github/felipejfc/udpx)
 [![Go Report Card](https://goreportcard.com/badge/github.com/felipejfc/udpx)](https://goreportcard.com/report/github.com/felipejfc/udpx)
+[![](https://images.microbadger.com/badges/image/felipejfc/udpx.svg)](https://microbadger.com/images/felipejfc/udpx)
 
 A Super Fast UDP Proxy that works as a NAT (has support to multiple clients) written in Golang.
 
