@@ -26,19 +26,18 @@ import (
 	"fmt"
 
 	"github.com/labstack/echo"
-	"github.com/labstack/echo/engine/standard"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 type API struct {
 	BindAddress string
 	BindPort    int
 	http        *echo.Echo
-	logger      zap.Logger
+	logger      *zap.Logger
 	debug       bool
 }
 
-func GetAPI(bindAddress string, bindPort int, debug bool, logger zap.Logger) *API {
+func GetAPI(bindAddress string, bindPort int, debug bool, logger *zap.Logger) *API {
 	api := &API{
 		BindAddress: bindAddress,
 		BindPort:    bindPort,
@@ -59,6 +58,6 @@ func (a *API) configureAPI() {
 }
 
 func (a *API) Start() {
-	go a.http.Run(standard.New(fmt.Sprintf(":%d", a.BindPort)))
+	go a.http.Start(fmt.Sprintf(":%d", a.BindPort))
 	a.logger.Info("api started!")
 }

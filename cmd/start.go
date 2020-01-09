@@ -28,7 +28,7 @@ import (
 	"github.com/felipejfc/udpx/api"
 	"github.com/felipejfc/udpx/proxy"
 	"github.com/spf13/cobra"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 var debug bool
@@ -47,17 +47,7 @@ var startCmd = &cobra.Command{
 	Long: `Starts UDP proxy with the specified arguments. You can use
 environment variables to override configuration keys.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		ll := zap.InfoLevel
-		if debug {
-			ll = zap.DebugLevel
-		}
-		if quiet {
-			ll = zap.ErrorLevel
-		}
-		l := zap.New(
-			zap.NewJSONEncoder(), // drop timestamps in tests
-			ll,
-		)
+		l, _ := zap.NewProduction()
 
 		cmdL := l.With(
 			zap.Bool("debug", debug),

@@ -27,12 +27,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 type Manager struct {
 	Debug                bool
-	Logger               zap.Logger
+	Logger               *zap.Logger
 	BindAddress          string
 	BufferSize           int
 	DefaultClientTimeout int
@@ -51,7 +51,7 @@ func GetManager() *Manager {
 	return instance
 }
 
-func (p *Manager) Configure(debug bool, logger zap.Logger, bindAddress string, bufferSize int, defaultClientTimeout int, defaultResolveTTL int) {
+func (p *Manager) Configure(debug bool, logger *zap.Logger, bindAddress string, bufferSize int, defaultClientTimeout int, defaultResolveTTL int) {
 	p.Logger = logger
 	p.Debug = debug
 	p.BindAddress = bindAddress

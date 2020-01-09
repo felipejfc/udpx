@@ -3,8 +3,8 @@
     {
       "bindPort": 10000,
       "upstreamAddress": "localhost",
-      "clientTimeout": 1000,
-      "upstreamPort": 8830,
+      "clientTimeout": 10000,
+      "upstreamPort": 5000,
       "name": "exampleStream1",
       "resolveTTL": 30000
     },

@@ -20,7 +20,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package main
+package main //import "github.com/felipejfc/udpx"
 
 import "github.com/felipejfc/udpx/cmd"
 

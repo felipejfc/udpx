@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Felipe Cavalcanti <fjfcavalcanti@gmail.com>
+ * Copyright (c) 2020 Felipe Cavalcanti <fjfcavalcanti@gmail.com>
  * Author: Felipe Cavalcanti <fjfcavalcanti@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -25,15 +25,16 @@ package proxy
 import (
 	"fmt"
 	"net"
+	"runtime"
 	"sync"
 	"time"
 
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
+// CheckError checks for error
 func CheckError(err error) {
-	ll := zap.ErrorLevel
-	logger := zap.New(zap.NewJSONEncoder(), ll)
+	logger, err := zap.NewProduction()
 	if err != nil {
 		logger.Fatal("error", zap.Error(err))
 	}
@@ -49,8 +50,9 @@ type packet struct {
 	data []byte
 }
 
+// Proxy struct
 type Proxy struct {
-	Logger                 zap.Logger
+	Logger                 *zap.Logger
 	BindPort               int
 	BindAddress            string
 	UpstreamAddress        string
@@ -62,14 +64,15 @@ type Proxy struct {
 	BufferSize             int
 	ConnTimeout            time.Duration
 	ResolveTTL             time.Duration
-	connsMap               map[string]connection
-	connectionsLock        *sync.RWMutex
+	connsMap               sync.Map
 	closed                 bool
 	clientMessageChannel   chan (packet)
 	upstreamMessageChannel chan (packet)
+	bufferPool             sync.Pool
 }
 
-func GetProxy(debug bool, logger zap.Logger, bindPort int, bindAddress string, upstreamAddress string, upstreamPort int, bufferSize int, connTimeout time.Duration, resolveTTL time.Duration) *Proxy {
+// GetProxy gets the proxy
+func GetProxy(debug bool, logger *zap.Logger, bindPort int, bindAddress string, upstreamAddress string, upstreamPort int, bufferSize int, connTimeout time.Duration, resolveTTL time.Duration) *Proxy {
 	proxy := &Proxy{
 		Debug:                  debug,
 		Logger:                 logger,
@@ -79,12 +82,11 @@ func GetProxy(debug bool, logger zap.Logger, bindPort int, bindAddress string, u
 		ConnTimeout:            connTimeout,
 		UpstreamAddress:        upstreamAddress,
 		UpstreamPort:           upstreamPort,
-		connectionsLock:        new(sync.RWMutex),
-		connsMap:               make(map[string]connection),
 		closed:                 false,
 		ResolveTTL:             resolveTTL,
 		clientMessageChannel:   make(chan packet),
 		upstreamMessageChannel: make(chan packet),
+		bufferPool:             sync.Pool{New: func() interface{} { return make([]byte, bufferSize) }},
 	}
 
 	return proxy
@@ -92,31 +94,25 @@ func GetProxy(debug bool, logger zap.Logger, bindPort int, bindAddress string, u
 
 func (p *Proxy) updateClientLastActivity(clientAddrString string) {
 	p.Logger.Debug("updating client last activity", zap.String("client", clientAddrString))
-	p.connectionsLock.Lock()
-	if _, found := p.connsMap[clientAddrString]; found {
-		connWrapper := p.connsMap[clientAddrString]
-		connWrapper.lastActivity = time.Now()
-		p.connsMap[clientAddrString] = connWrapper
+	if connWrapper, found := p.connsMap.Load(clientAddrString); found {
+		connWrapper.(*connection).lastActivity = time.Now()
 	}
-	p.connectionsLock.Unlock()
 }
 
 func (p *Proxy) clientConnectionReadLoop(clientAddr *net.UDPAddr, upstreamConn *net.UDPConn) {
 	clientAddrString := clientAddr.String()
 	for {
-		buffer := make([]byte, p.BufferSize)
-		size, _, err := upstreamConn.ReadFromUDP(buffer)
+		msg := p.bufferPool.Get().([]byte)
+		size, _, err := upstreamConn.ReadFromUDP(msg[0:])
 		if err != nil {
-			p.connectionsLock.Lock()
 			upstreamConn.Close()
-			delete(p.connsMap, clientAddrString)
-			p.connectionsLock.Unlock()
+			p.connsMap.Delete(clientAddrString)
 			return
 		}
 		p.updateClientLastActivity(clientAddrString)
 		p.upstreamMessageChannel <- packet{
 			src:  clientAddr,
-			data: buffer[:size],
+			data: msg[:size],
 		}
 	}
 }
@@ -125,6 +121,7 @@ func (p *Proxy) handlerUpstreamPackets() {
 	for pa := range p.upstreamMessageChannel {
 		p.Logger.Debug("forwarded data from upstream", zap.Int("size", len(pa.data)), zap.String("data", string(pa.data)))
 		p.listenerConn.WriteTo(pa.data, pa.src)
+		p.bufferPool.Put(pa.data)
 	}
 }
 
@@ -138,10 +135,7 @@ func (p *Proxy) handleClientPackets() {
 			zap.Int("size", len(pa.data)),
 		)
 
-		p.connectionsLock.RLock()
-		conn, found := p.connsMap[packetSourceString]
-		p.connectionsLock.RUnlock()
-
+		conn, found := p.connsMap.Load(packetSourceString)
 		if !found {
 			conn, err := net.ListenUDP("udp", p.client)
 			p.Logger.Debug("new client connection",
@@ -153,44 +147,41 @@ func (p *Proxy) handleClientPackets() {
 				return
 			}
 
-			p.connectionsLock.Lock()
-			p.connsMap[packetSourceString] = connection{
+			p.connsMap.Store(packetSourceString, &connection{
 				udp:          conn,
 				lastActivity: time.Now(),
-			}
-			p.connectionsLock.Unlock()
+			})
 
 			conn.WriteTo(pa.data, p.upstream)
 			go p.clientConnectionReadLoop(pa.src, conn)
 		} else {
-			conn.udp.WriteTo(pa.data, p.upstream)
-			p.connectionsLock.RLock()
+			conn.(*connection).udp.WriteTo(pa.data, p.upstream)
 			shouldUpdateLastActivity := false
-			if _, found := p.connsMap[packetSourceString]; found {
-				if p.connsMap[packetSourceString].lastActivity.Before(
+			if conn, found := p.connsMap.Load(packetSourceString); found {
+				if conn.(*connection).lastActivity.Before(
 					time.Now().Add(-p.ConnTimeout / 4)) {
 					shouldUpdateLastActivity = true
 				}
 			}
-			p.connectionsLock.RUnlock()
 			if shouldUpdateLastActivity {
 				p.updateClientLastActivity(packetSourceString)
 			}
 		}
+		p.bufferPool.Put(pa.data)
 	}
 }
 
 func (p *Proxy) readLoop() {
 	for !p.closed {
-		buffer := make([]byte, p.BufferSize)
-		size, srcAddress, err := p.listenerConn.ReadFromUDP(buffer)
+		msg := p.bufferPool.Get().([]byte)
+		size, srcAddress, err := p.listenerConn.ReadFromUDP(msg[0:])
 		if err != nil {
 			p.Logger.Error("error", zap.Error(err))
 			continue
 		}
 		p.clientMessageChannel <- packet{
 			src:  srcAddress,
-			data: buffer[:size],
+			data: msg[:size],
 		}
 	}
 }
@@ -215,38 +206,40 @@ func (p *Proxy) freeIdleSocketsLoop() {
 		time.Sleep(p.ConnTimeout)
 		var clientsToTimeout []string
 
-		p.connectionsLock.RLock()
-		for client, conn := range p.connsMap {
-			if conn.lastActivity.Before(time.Now().Add(-p.ConnTimeout)) {
-				clientsToTimeout = append(clientsToTimeout, client)
+		p.connsMap.Range(func(k, conn interface{}) bool {
+			if conn.(*connection).lastActivity.Before(time.Now().Add(-p.ConnTimeout)) {
+				clientsToTimeout = append(clientsToTimeout, k.(string))
 			}
-		}
-		p.connectionsLock.RUnlock()
+			return true
+		})
 
-		p.connectionsLock.Lock()
 		for _, client := range clientsToTimeout {
 			p.Logger.Debug("client timeout", zap.String("client", client))
-			p.connsMap[client].udp.Close()
-			delete(p.connsMap, client)
+			conn, ok := p.connsMap.Load(client)
+			if ok {
+				conn.(*connection).udp.Close()
+				p.connsMap.Delete(client)
+			}
 		}
-		p.connectionsLock.Unlock()
 	}
 }
 
+// Close stops the proxy
 func (p *Proxy) Close() {
 	p.Logger.Warn("Closing proxy")
-	p.connectionsLock.Lock()
 	p.closed = true
-	for _, conn := range p.connsMap {
-		conn.udp.Close()
-	}
+	p.connsMap.Range(func(k, conn interface{}) bool {
+		conn.(*connection).udp.Close()
+		return true
+	})
 	if p.listenerConn != nil {
 		p.listenerConn.Close()
 	}
-	p.connectionsLock.Unlock()
 }
 
+// Start starts the proxy
 func (p *Proxy) Start() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	p.Logger.Info("Starting proxy")
 
 	ProxyAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", p.BindAddress, p.BindPort))
@@ -279,7 +272,9 @@ func (p *Proxy) Start() {
 	} else {
 		p.Logger.Warn("not refreshing upstream addr")
 	}
-	go p.handlerUpstreamPackets()
-	go p.handleClientPackets()
-	go p.readLoop()
+	for i := 0; i < runtime.NumCPU(); i++ {
+		go p.readLoop()
+		go p.handleClientPackets()
+		go p.handlerUpstreamPackets()
+	}
 }
