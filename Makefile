@@ -60,7 +60,5 @@ coverage-html: coverage
 	@go tool cover -html=coverage-all.out
 
 setup-ci:
-	@go get -u github.com/Masterminds/glide/...
 	@go get github.com/mattn/goveralls
 	@go get github.com/onsi/ginkgo/ginkgo
-	@glide install

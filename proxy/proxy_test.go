@@ -29,7 +29,7 @@ import (
 	"time"
 
 	. "github.com/felipejfc/udpx/proxy"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -44,11 +44,7 @@ var _ = Describe("Proxy", func() {
 
 	BeforeEach(func() {
 		debug := false
-		ll := zap.ErrorLevel
-		logger := zap.New(
-			zap.NewJSONEncoder(),
-			ll,
-		)
+		logger, _ := zap.NewProduction()
 		bindPort := 23456
 		bindAddress := "localhost"
 		upstreamAddress := "localhost"
