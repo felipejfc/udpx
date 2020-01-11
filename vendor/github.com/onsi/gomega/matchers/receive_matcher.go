@@ -1,3 +1,5 @@
+// untested sections: 3
+
 package matchers
 
 import (
@@ -35,17 +37,12 @@ func (matcher *ReceiveMatcher) Match(actual interface{}) (success bool, err erro
 			if argType.Kind() != reflect.Ptr {
 				return false, fmt.Errorf("Cannot assign a value from the channel:\n%s\nTo:\n%s\nYou need to pass a pointer!", format.Object(actual, 1), format.Object(matcher.Arg, 1))
 			}
-
-			assignable := channelType.Elem().AssignableTo(argType.Elem())
-			if !assignable {
-				return false, fmt.Errorf("Cannot assign a value from the channel:\n%s\nTo:\n%s", format.Object(actual, 1), format.Object(matcher.Arg, 1))
-			}
 		}
 	}
 
 	winnerIndex, value, open := reflect.Select([]reflect.SelectCase{
-		reflect.SelectCase{Dir: reflect.SelectRecv, Chan: channelValue},
-		reflect.SelectCase{Dir: reflect.SelectDefault},
+		{Dir: reflect.SelectRecv, Chan: channelValue},
+		{Dir: reflect.SelectDefault},
 	})
 
 	var closed bool
@@ -57,54 +54,71 @@ func (matcher *ReceiveMatcher) Match(actual interface{}) (success bool, err erro
 	matcher.channelClosed = closed
 
 	if closed {
-		return false, fmt.Errorf("ReceiveMatcher was given a closed channel:\n%s", format.Object(actual, 1))
+		return false, nil
 	}
 
 	if hasSubMatcher {
 		if didReceive {
 			matcher.receivedValue = value
 			return subMatcher.Match(matcher.receivedValue.Interface())
-		} else {
-			return false, nil
 		}
+		return false, nil
 	}
 
 	if didReceive {
 		if matcher.Arg != nil {
 			outValue := reflect.ValueOf(matcher.Arg)
-			reflect.Indirect(outValue).Set(value)
+
+			if value.Type().AssignableTo(outValue.Elem().Type()) {
+				outValue.Elem().Set(value)
+				return true, nil
+			}
+			if value.Type().Kind() == reflect.Interface && value.Elem().Type().AssignableTo(outValue.Elem().Type()) {
+				outValue.Elem().Set(value.Elem())
+				return true, nil
+			} else {
+				return false, fmt.Errorf("Cannot assign a value from the channel:\n%s\nType:\n%s\nTo:\n%s", format.Object(actual, 1), format.Object(value.Interface(), 1), format.Object(matcher.Arg, 1))
+			}
+
 		}
 
 		return true, nil
-	} else {
-		return false, nil
 	}
+	return false, nil
 }
 
 func (matcher *ReceiveMatcher) FailureMessage(actual interface{}) (message string) {
 	subMatcher, hasSubMatcher := (matcher.Arg).(omegaMatcher)
+
+	closedAddendum := ""
+	if matcher.channelClosed {
+		closedAddendum = " The channel is closed."
+	}
 
 	if hasSubMatcher {
 		if matcher.receivedValue.IsValid() {
 			return subMatcher.FailureMessage(matcher.receivedValue.Interface())
 		}
 		return "When passed a matcher, ReceiveMatcher's channel *must* receive something."
-	} else {
-		return format.Message(actual, "to receive something")
 	}
+	return format.Message(actual, "to receive something."+closedAddendum)
 }
 
 func (matcher *ReceiveMatcher) NegatedFailureMessage(actual interface{}) (message string) {
 	subMatcher, hasSubMatcher := (matcher.Arg).(omegaMatcher)
+
+	closedAddendum := ""
+	if matcher.channelClosed {
+		closedAddendum = " The channel is closed."
+	}
 
 	if hasSubMatcher {
 		if matcher.receivedValue.IsValid() {
 			return subMatcher.NegatedFailureMessage(matcher.receivedValue.Interface())
 		}
 		return "When passed a matcher, ReceiveMatcher's channel *must* receive something."
-	} else {
-		return format.Message(actual, "not to receive anything")
 	}
+	return format.Message(actual, "not to receive anything."+closedAddendum)
 }
 
 func (matcher *ReceiveMatcher) MatchMayChangeInTheFuture(actual interface{}) bool {
