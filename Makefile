@@ -24,17 +24,22 @@ build:
 	@mkdir -p bin
 	@go build -o bin/udpx
 
-build-cross: build-cross-darwin build-cross-linux build-exec
+build-cross: build-cross-darwin build-cross-linux build-cross-win64 build-exec
 
 build-exec:
 	@chmod u+x bin/*
 
+build-cross-win64:
+	@mkdir -p ./bin
+	@echo "Building for windows-x86_64..."
+	@env GOOS=windows GOARCH=amd64 go build -o bin/udpx-x86_64.exe ./main.go	
+
 build-cross-darwin:
 	@mkdir -p ./bin
-	@echo "Building for darwin-i386..."
-	@env GOOS=darwin GOARCH=386 go build -o ./bin/udpx-darwin-i386 ./main.go
 	@echo "Building for darwin-x86_64..."
 	@env GOOS=darwin GOARCH=amd64 go build -o ./bin/udpx-darwin-x86_64 ./main.go
+	@echo "Building for darwin-arm_64..."
+	@env GOOS=darwin GOARCH=arm64 go build -o ./bin/udpx-darwin-arm_64 ./main.go
 
 build-cross-linux:
 	@mkdir -p ./bin
