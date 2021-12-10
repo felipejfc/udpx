@@ -1,10 +1,6 @@
 UDPX
 =========
-[![Build Status](https://travis-ci.org/felipejfc/udpx.svg?branch=master)](https://travis-ci.org/felipejfc/udpx)
-[![Coverage Status](https://coveralls.io/repos/github/felipejfc/udpx/badge.svg)](https://coveralls.io/github/felipejfc/udpx)
-[![Code Climate](https://codeclimate.com/github/felipejfc/udpx/badges/gpa.svg)](https://codeclimate.com/github/felipejfc/udpx)
-[![Go Report Card](https://goreportcard.com/badge/github.com/felipejfc/udpx)](https://goreportcard.com/report/github.com/felipejfc/udpx)
-[![](https://images.microbadger.com/badges/image/felipejfc/udpx.svg)](https://microbadger.com/images/felipejfc/udpx)
+[![Build Status](https://github.com/joelatrr/actions/release.yml/badge.svg)](https://github.com/joelatrr/udpx/actions/workflows/release.yml)
 
 A Super Fast UDP Proxy that works as a NAT (has support to multiple clients) written in Golang.
 
@@ -45,7 +41,6 @@ Use "udpx [command] --help" for more information about a command.
 - [x] Add config
 - [x] Add command
 - [x] Add tests infrastructure
-- [x] Travis CI and Code Coverage
 - [x] Support to multiple upstreams
 - [x] Dynamically resolve upstreams
 - [x] Dynamically add proxies
