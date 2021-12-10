@@ -19,7 +19,7 @@ A Super Fast UDP Proxy that works as a NAT (has support to multiple clients) wri
 * Multiple upstreams
 
 ### Dependencies
- - GO 1.7
+ - GO 1.17
 
 ### Compiling
 ```
