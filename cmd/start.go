@@ -97,7 +97,7 @@ func init() {
 	startCmd.Flags().StringVarP(&bindAddress, "bind", "b", "0.0.0.0", "Host to bind proxies and api")
 	startCmd.Flags().StringVarP(&configPath, "configPath", "c", "./config", "Path to the folder containing the config files")
 	startCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode")
-	startCmd.Flags().BoolVarP(&useAPI, "api", "a", false, "Start udpx api for managing upstreams dinamically")
+	startCmd.Flags().BoolVarP(&useAPI, "api", "a", false, "Start udpx api for managing upstreams dynamically")
 	startCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Quiet mode (log level error)")
 	startCmd.Flags().IntVarP(&defaultClientTimeout, "defaultClientTimeout", "t", 1000, "The default client timeout that the proxies will use")
 	startCmd.Flags().IntVarP(&defaultResolveTTL, "defaultResolveTTL", "T", 30000, "The default time that the proxies will keep the upstream ip resolution cached")
