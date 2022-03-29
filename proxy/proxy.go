@@ -46,8 +46,9 @@ type connection struct {
 }
 
 type packet struct {
-	src  *net.UDPAddr
-	data []byte
+	src     *net.UDPAddr
+	data    []byte
+	dataLen int
 }
 
 // Proxy struct
@@ -111,16 +112,17 @@ func (p *Proxy) clientConnectionReadLoop(clientAddr *net.UDPAddr, upstreamConn *
 		}
 		p.updateClientLastActivity(clientAddrString)
 		p.upstreamMessageChannel <- packet{
-			src:  clientAddr,
-			data: msg[:size],
+			src:     clientAddr,
+			data:    msg,
+			dataLen: size,
 		}
 	}
 }
 
 func (p *Proxy) handlerUpstreamPackets() {
 	for pa := range p.upstreamMessageChannel {
-		p.Logger.Debug("forwarded data from upstream", zap.Int("size", len(pa.data)), zap.String("data", string(pa.data)))
-		p.listenerConn.WriteTo(pa.data, pa.src)
+		p.Logger.Debug("forwarded data from upstream", zap.Int("size", pa.dataLen), zap.String("data", string(pa.data[:pa.dataLen])))
+		p.listenerConn.WriteTo(pa.data[:pa.dataLen], pa.src)
 		p.bufferPool.Put(pa.data)
 	}
 }
@@ -131,8 +133,8 @@ func (p *Proxy) handleClientPackets() {
 		p.Logger.Debug("packet received",
 			zap.String("src address", packetSourceString),
 			zap.Int("src port", pa.src.Port),
-			zap.String("packet", string(pa.data)),
-			zap.Int("size", len(pa.data)),
+			zap.String("packet", string(pa.data[:pa.dataLen])),
+			zap.Int("size", pa.dataLen),
 		)
 
 		conn, found := p.connsMap.Load(packetSourceString)
@@ -152,10 +154,10 @@ func (p *Proxy) handleClientPackets() {
 				lastActivity: time.Now(),
 			})
 
-			conn.WriteTo(pa.data, p.upstream)
+			conn.WriteTo(pa.data[:pa.dataLen], p.upstream)
 			go p.clientConnectionReadLoop(pa.src, conn)
 		} else {
-			conn.(*connection).udp.WriteTo(pa.data, p.upstream)
+			conn.(*connection).udp.WriteTo(pa.data[:pa.dataLen], p.upstream)
 			shouldUpdateLastActivity := false
 			if conn, found := p.connsMap.Load(packetSourceString); found {
 				if conn.(*connection).lastActivity.Before(
@@ -180,8 +182,9 @@ func (p *Proxy) readLoop() {
 			continue
 		}
 		p.clientMessageChannel <- packet{
-			src:  srcAddress,
-			data: msg[:size],
+			src:     srcAddress,
+			data:    msg,
+			dataLen: size,
 		}
 	}
 }
